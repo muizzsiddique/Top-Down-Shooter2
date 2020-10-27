@@ -237,6 +237,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   walkSpeed: 5
+  camera: {fileID: 542953275}
 --- !u!212 &678304187
 SpriteRenderer:
   m_ObjectHideFlags: 0
