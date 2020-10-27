@@ -6,11 +6,11 @@ public class PlayerController : MonoBehaviour
 {
     public float walkSpeed;
 
-    public Camera camera;
+    private Camera cameraObj;
 
     void Start()
     {
-        
+        cameraObj = Camera.main;
     }
 
     void Update()
@@ -21,7 +21,7 @@ public class PlayerController : MonoBehaviour
 
     void LateUpdate()
     {
-        camera.transform.position = transform.position + new Vector3(0.0f, 0.0f, -10.0f);
+        cameraObj.transform.position = transform.position + new Vector3(0.0f, 0.0f, -10.0f);
     }
 
     void movePlayer()
@@ -36,8 +36,13 @@ public class PlayerController : MonoBehaviour
 
     void lookAtMouse()
     {
-        Vector3 mouse = Input.mousePosition;
+        Vector3 mousePos = cameraObj.ScreenToWorldPoint(Input.mousePosition); // Camera.main == current camera
 
-        Debug.Log(mouse);
+        Vector3 lookAt = new Vector3(mousePos.x - transform.position.x, mousePos.y - transform.position.y);
+        float zRot = Mathf.Atan2(lookAt.y, lookAt.x);
+
+        transform.rotation = Quaternion.Euler(0.0f, 0.0f, zRot * Mathf.Rad2Deg);
+
+        Debug.Log(zRot);
     }
 }
