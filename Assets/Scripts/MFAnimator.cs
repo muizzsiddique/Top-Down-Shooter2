@@ -5,6 +5,17 @@ using UnityEngine;
 public class MFAnimator : MonoBehaviour
 {
     public float animationSpeed;
+    private Rigidbody2D rb;
+
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+    }
+
+    public void SetVelocity(Vector3 velocity)
+    {
+        rb.velocity = velocity;
+    }
 
     void Update()
     {

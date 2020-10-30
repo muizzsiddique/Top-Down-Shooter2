@@ -67,11 +67,12 @@ public class PlayerController : MonoBehaviour
 
             obj.transform.position = position + new Vector3(0f, 0f, -1f);
             obj.transform.Rotate(transform.rotation.eulerAngles);
+            obj.GetComponent<MFAnimator>().SetVelocity(rb.velocity);
 
             Vector2 direction = new Vector2(mousePosition.x - transform.position.x, mousePosition.y - transform.position.y);
             RaycastHit2D hit = Physics2D.Raycast(transform.position, direction, Mathf.Infinity, ~LayerMask.GetMask("Player"));
             if (hit.collider != null)
-                hit.collider.SendMessage("OnHit");
+                hit.collider.GetComponent<EnemyController>().OnHit();
 
         }
     }
