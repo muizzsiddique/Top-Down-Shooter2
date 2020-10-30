@@ -42,7 +42,5 @@ public class PlayerController : MonoBehaviour
         float zRot = Mathf.Atan2(lookAt.y, lookAt.x);
 
         transform.rotation = Quaternion.Euler(0.0f, 0.0f, zRot * Mathf.Rad2Deg);
-
-        Debug.Log(zRot);
     }
 }
