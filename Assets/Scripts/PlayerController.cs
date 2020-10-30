@@ -72,9 +72,8 @@ public class PlayerController : MonoBehaviour
             Vector2 direction = new Vector2(mousePosition.x - transform.position.x, mousePosition.y - transform.position.y);
             RaycastHit2D hit = Physics2D.Raycast(transform.position, direction, Mathf.Infinity, ~LayerMask.GetMask("Player"));
             if (hit.collider != null)
-                hit.collider.GetComponent<EnemyController>().OnHit();
+                Debug.Log(hit.collider.name + " was hit.");
+                //hit.collider.GetComponent<EnemyController>().OnHit();
         }
     }
 }
-
-// Testing
