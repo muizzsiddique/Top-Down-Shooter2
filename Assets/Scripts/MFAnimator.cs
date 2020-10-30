@@ -7,7 +7,7 @@ public class MFAnimator : MonoBehaviour
     public float animationSpeed;
     private Rigidbody2D rb;
 
-    void Awake()
+    void Awake() // Should this be Start?
     {
         rb = GetComponent<Rigidbody2D>();
     }

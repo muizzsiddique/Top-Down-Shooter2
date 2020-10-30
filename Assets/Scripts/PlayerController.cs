@@ -73,7 +73,6 @@ public class PlayerController : MonoBehaviour
             RaycastHit2D hit = Physics2D.Raycast(transform.position, direction, Mathf.Infinity, ~LayerMask.GetMask("Player"));
             if (hit.collider != null)
                 hit.collider.GetComponent<EnemyController>().OnHit();
-
         }
     }
 }
