@@ -1,128 +1,110 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.AI;
 
 public class EnemyController : MonoBehaviour
 {
-    public GameObject enemy;
+    enum State { Patrol, Wait, Chase }
+
+    Rigidbody2D rb;
+
+    State state = State.Wait;
+    bool canChangeState = false;
+    IEnumerator patrolRoutine;
+
+    Vector3 target;
+    bool inBoundary = true;
+
+    float rotation = 0.0f;
+
+    public Collider2D boundary;
     public GameObject player;
-    public float moveSpeed = 4f;
-    private Transform playert;
-    private Rigidbody2D rb;
-    private Vector2 movement;
-    private RaycastHit2D hit;
-
-    public float speed;
-    private float waitTime;
-    public float startWaitTime;
-    public Transform moveSpot;
-    public float minX;
-    public float maxX;
-    public float minY;
-    public float maxY;
-
+    public float moveSpeed;
 
     void Start()
     {
-        
-        rb = this.GetComponent<Rigidbody2D>();
-        playert = player.transform;
-        waitTime = startWaitTime;
-        moveSpot.position = new Vector2(Random.Range(minX, maxX), Random.Range(minY, maxY));
+        rb = GetComponent<Rigidbody2D>();
 
-
+        patrolRoutine = DoPatrol(1f, 2f);
+        StartCoroutine(patrolRoutine);
     }
 
-    // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
-        if (hit.collider.tag != "Player")
+        switch (state)
         {
-            randomMove();
-        }
-        Vector2 direction = playert.position - transform.position;
-        Vector2 pos = (Vector2)transform.position + (direction * moveSpeed * Time.deltaTime);
-        if (player != null && hit.collider.tag == "Player" && pos.x < maxX && pos.x > minX && pos.y > minY && pos.y < maxY)
-        {
-            playerDirection();
-        }
-        
-
-
-
-    }
-
-    private void FixedUpdate()
-    {
-       
-        Vector3 direction = playert.position - transform.position;
-        hit = Physics2D.Raycast(transform.position, direction,4,~LayerMask.GetMask("Enemy"));
-        Vector2 direction2 = playert.position - transform.position;
-        Vector2 pos = (Vector2)transform.position + (direction2 * moveSpeed * Time.deltaTime);
-        if (hit.collider.tag == "Player" && pos.x < maxX && pos.x > minX && pos.y > minY && pos.y < maxY)
-        {
-            if (player != null)
-            {
-                moveCharacter(movement);
-            }
-        }
-        
-
-    }
-
-    void playerDirection()
-    {
-        Vector3 direction = playert.position - transform.position;
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        rb.rotation = angle;
-        direction.Normalize();
-        movement = direction;
-        float distance = Vector2.Distance(playert.position, transform.position);
-        if (distance < 0.4f)
-        {
-            Destroy(player);
+            case State.Patrol:
+                rb.velocity = (target - transform.position).normalized * moveSpeed;
+                break;
+            case State.Wait:
+                rb.velocity = Vector3.zero;
+                break;
+            case State.Chase:
+                rb.velocity = (player.transform.position - transform.position).normalized * moveSpeed;
+                break;
         }
 
-    }
+        if (rb.velocity != Vector2.zero)
+            rotation = Mathf.Atan2(rb.velocity.y, rb.velocity.x) * Mathf.Rad2Deg;
+        rb.rotation = rotation;
 
-    void moveCharacter(Vector2 direction)
-    {
-        rb.MovePosition((Vector2)transform.position + (direction * moveSpeed * Time.deltaTime));
-    }
-
-    void PatrolRandomSpot()
-    {
-        waitTime = startWaitTime;
-        moveSpot.position = new Vector2(Random.Range(minX, maxX), Random.Range(minY, maxY));
-    }
-
-    void randomMove()
-    {
-        lookDir();
-        transform.position = Vector2.MoveTowards(transform.position, moveSpot.position, speed * Time.deltaTime);
-
-        if (Vector2.Distance(transform.position, moveSpot.position) < 0.3f)
+        if (canChangeState && state != State.Chase && inBoundary && Vector3.Distance(player.transform.position, transform.position) < 2f)
         {
-            if (waitTime <= 0)
-            {
-                moveSpot.position = new Vector2(Random.Range(minX, maxX), Random.Range(minY, maxY));
-                waitTime = startWaitTime;
-            }
-            else
-            {
-                waitTime -= Time.deltaTime;
-            }
+            state = State.Chase;
+            StopCoroutine(patrolRoutine);
+        }
+        else if (state == State.Chase && !inBoundary && Vector3.Distance(player.transform.position, transform.position) >= 2f)
+        {
+            StartCoroutine(patrolRoutine);
         }
     }
 
-    void lookDir()
+    IEnumerator DoPatrol(float startTime, float waitTime)
     {
-        Vector3 direction = moveSpot.position - transform.position;
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        rb.rotation = angle;
+        canChangeState = false;
+        state = State.Wait;
+        NextTarget();
+        yield return new WaitForSeconds(startTime);
+
+        canChangeState = true;
+        while (true)
+        {
+            state = State.Patrol;
+            yield return new WaitUntil(() => (target - transform.position).magnitude < 0.3f);
+            state = State.Wait;
+            NextTarget();
+            yield return new WaitForSeconds(waitTime);
+        }
     }
 
+    public void OnHit()
+    {
+        StopAllCoroutines();
+        GetComponentInParent<Transform>().gameObject.SetActive(false);
+    }
 
+    void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.gameObject.GetComponent<Collider2D>() == boundary)
+        {
+            inBoundary = false;
+            if (gameObject.activeSelf) StartCoroutine(patrolRoutine);
+        }
+    }
 
+    void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.GetComponent<Collider2D>() == boundary)
+        {
+            inBoundary = true;
+        }
+    }
+
+    void NextTarget()
+    {
+        target = new Vector3(
+            Random.Range(boundary.bounds.min.x, boundary.bounds.max.x),
+            Random.Range(boundary.bounds.min.y, boundary.bounds.max.y)
+        );
+    }
 }
